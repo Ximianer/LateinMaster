@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="de" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LateinMaster Pro - Ultimate Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { darkBg: '#0f172a', darkCard: '#1e293b' }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        :root { --app-max-width: 450px; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0; min-height: 100vh; display: flex; justify-content: center; overflow-x: hidden; }
+        .app-container { width: 100%; max-width: var(--app-max-width); min-height: 100vh; transition: max-width 0.4s ease; position: relative; display: flex; flex-direction: column; padding-bottom: 90px; }
+        
+        .btn-bounce { transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); touch-action: manipulation; }
+        .btn-bounce:active { transform: scale(0.96); }
+        
+        .correct { background-color: #22c55e !important; color: white !important; border-color: #16a34a !important; }
+        .wrong { background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important; animation: shake 0.4s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        
+        .hidden-section { display: none; }
+        
+        .paradigm-grid { display: grid; grid-template-columns: 80px 1fr; gap: 8px; width: 100%; }
+        .paradigm-label { font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; display: flex; align-items: center; }
+        .paradigm-value { background: rgba(0,0,0,0.03); padding: 10px 14px; border-radius: 12px; font-weight: 600; font-size: 1rem; border: 1px solid rgba(0,0,0,0.05); }
+        .dark .paradigm-value { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.05); }
+        .gap-highlight { background: #4f46e5 !important; color: white !important; border: 2px dashed #818cf8 !important; animation: pulse 2s infinite; }
+        
+        .lib-card { transition: all 0.3s ease; position: relative; }
+        .lib-content { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); max-height: 0; overflow: hidden; opacity: 0; }
+        .lib-card.revealed .lib-content { max-height: 10000px; opacity: 1; margin-top: 1.5rem; }
+        .lib-status-icon { transition: transform 0.3s; }
+        .lib-card.revealed .lib-status-icon { transform: rotate(180deg); }
+        
+        .lib-table { width: 100%; font-size: 0.85rem; border-collapse: separate; border-spacing: 0 6px; }
+        .lib-table td { padding: 10px; background: rgba(0,0,0,0.02); border-radius: 10px; }
+        .dark .lib-table td { background: rgba(255,255,255,0.02); }
+
+        .form-cell.hidden-cell { color: transparent !important; background: rgba(148, 163, 184, 0.15) !important; filter: blur(6px); cursor: pointer; }
+        .form-cell.revealed-cell { color: inherit !important; background: rgba(79, 70, 229, 0.1) !important; filter: blur(0); }
+        
+        .nav-bar { position: fixed; bottom: 0; width: 100%; max-width: inherit; height: 80px; background: rgba(255,255,255,0.85); backdrop-blur: 20px; border-top: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-around; align-items: center; z-index: 100; border-radius: 28px 28px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.08); }
+        .dark .nav-bar { background: rgba(15, 23, 42, 0.85); border-color: rgba(255,255,255,0.05); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #94a3b8; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; gap: 6px; transition: all 0.3s; flex: 1; border: none; background: none; cursor: pointer; }
+        .nav-item.active { color: #4f46e5; }
+        
+        .mode-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.6rem; font-weight: 900; letter-spacing: 0.05em; }
+
+        .level-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .level-btn { aspect-ratio: 1; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; position: relative; overflow: hidden; }
+        .level-locked { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
+
+    <div id="app-viewport" class="app-container bg-white dark:bg-darkBg shadow-2xl">
+        
+        <!-- Header -->
+        <header class="sticky top-0 z-50 bg-white/90 dark:bg-darkBg/90 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center font-extrabold text-white shadow-lg">
+                    <span id="display-level">1</span>
+                </div>
+                <div>
+                    <span id="xp-display" class="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-tighter">0 XP</span>
+                    <div class="w-24 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mt-1">
+                        <div id="xp-progress" class="h-full bg-indigo-500 transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            <button onclick="window.toggleDarkMode()" class="p-2.5 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+            </button>
+        </header>
+
+        <main class="flex-1 overflow-y-auto px-6 py-8">
+            <!-- Start-Sektion: Level-Pfad -->
+            <section id="section-start">
+                <div class="mb-10 text-center">
+                    <h1 class="text-4xl font-black tracking-tight mb-2">LateinMaster</h1>
+                    <p class="text-slate-400 font-medium italic">Labor omnia vincit.</p>
+                </div>
+                
+                <h3 class="font-black text-xs uppercase tracking-[0.2em] text-slate-400 mb-6">Trainings-Pfad</h3>
+                <div id="level-grid" class="level-grid pb-24"></div>
+            </section>
+
+            <!-- Modus-Auswahl -->
+            <section id="section-mode-select" class="hidden-section flex flex-col justify-center min-h-[60vh]">
+                <h2 id="selected-level-name" class="text-3xl font-black mb-2 text-center">Level</h2>
+                <p id="selected-level-desc" class="text-slate-400 text-center mb-10">Wähle deinen Trainingsmodus</p>
+                
+                <div class="grid gap-4">
+                    <button onclick="window.confirmMode('mc')" class="btn-bounce bg-white dark:bg-darkCard p-6 rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 flex items-center gap-6 text-left shadow-xl">
+                        <div class="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 flex items-center justify-center text-3xl">🎯</div>
+                        <div>
+                            <p class="font-black text-xl">Multiple Choice</p>
+                            <p class="text-slate-400 text-xs font-bold">Schnelles Erkennen</p>
+                        </div>
+                    </button>
+                    <button onclick="window.confirmMode('text')" class="btn-bounce bg-white dark:bg-darkCard p-6 rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 flex items-center gap-6 text-left shadow-xl">
+                        <div class="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center text-3xl">✍️</div>
+                        <div>
+                            <p class="font-black text-xl">Texteingabe</p>
+                            <p class="text-slate-400 text-xs font-bold">Aktives Abrufen</p>
+                        </div>
+                    </button>
+                    <button onclick="window.showSection('start')" class="mt-4 text-slate-400 font-black text-xs tracking-widest">ZURÜCK</button>
+                </div>
+            </section>
+
+            <!-- Spiel-Sektion -->
+            <section id="section-play" class="hidden-section">
+                <div class="mb-6 flex justify-between items-center">
+                    <div>
+                        <span id="play-mode-label" class="mode-badge bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 mb-2 inline-block uppercase">MODUS</span>
+                        <h2 id="play-word-name" class="text-2xl font-black italic leading-none">...</h2>
+                        <p id="play-gram-info" class="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-2">...</p>
+                    </div>
+                    <div class="text-right">
+                        <p id="play-progress-text" class="text-[10px] font-black text-slate-300 mb-1">1 / 10</p>
+                        <div class="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div id="play-progress-bar" class="h-full bg-indigo-500 transition-all duration-300" style="width: 10%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="paradigm-container" class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-sm mb-6 space-y-2"></div>
+                
+                <div id="play-interaction-area">
+                    <div id="play-options" class="grid grid-cols-2 gap-3 mb-6"></div>
+                    <div id="play-text-input" class="hidden">
+                        <input type="text" id="verb-input-field" placeholder="Antwort..." class="w-full p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-darkCard font-bold text-lg focus:border-indigo-500 outline-none transition-all" autocomplete="off" autocapitalize="none">
+                        <button onclick="window.checkTextInput()" class="w-full mt-3 bg-indigo-600 text-white p-5 rounded-2xl font-black text-lg shadow-lg">PRÜFEN</button>
+                    </div>
+                </div>
+                
+                <div id="play-feedback" class="text-center font-black text-lg min-h-[3rem] mt-4"></div>
+            </section>
+
+            <!-- Bibliothek -->
+            <section id="section-library" class="hidden-section">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-black tracking-tight">Bibliothek</h2>
+                    <button onclick="window.toggleHideMode()" id="hide-mode-btn" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl text-xs font-black transition-all">
+                        👀 ABDECKEN
+                    </button>
+                </div>
+                <div id="library-content" class="grid gap-4 pb-20"></div>
+            </section>
+        </main>
+
+        <!-- Navigation -->
+        <nav class="nav-bar">
+            <button onclick="window.showSection('start')" id="nav-home" class="nav-item active">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                <span>Training</span>
+            </button>
+            <button onclick="window.showSection('library')" id="nav-library" class="nav-item">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                <span>Bibliothek</span>
+            </button>
+        </nav>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        // Firebase Initialisierung
+        const firebaseConfig = {
+            apiKey: "AIzaSyA7dqxtzBtxLZ6Mkl-0m5y1wpXQj6CMvfY",
+            authDomain: "lateinmaster-c6012.firebaseapp.com",
+            projectId: "lateinmaster-c6012",
+            storageBucket: "lateinmaster-c6012.firebasestorage.app",
+            messagingSenderId: "428579328001",
+            appId: "1:428579328001:web:cd776a4b22003f908a3000",
+            measurementId: "G-7YBD0JLSNG"
+        };
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            const appId = 'lateinmaster-pro-v3';
+
+            // Globale Funktionen für HTML
+            window.toggleDarkMode = () => document.documentElement.classList.toggle('dark');
+
+            let user = null;
+            let userData = { xp: 0, unlockedLevel: 1 };
+            let currentLevel = null;
+            let session = { current: 0, total: 10, mode: 'mc' };
+            let isHideMode = false;
+            let currentTargetForm = "";
+
+            const verbData = {
+                a: { name: "vocāre", sPres: "vocā", sPerf: "vocāv", pPerf: "vocāt", type: "a" },
+                e: { name: "monēre", sPres: "monē", sPerf: "monu", pPerf: "monit", type: "e" },
+                i: { name: "audīre", sPres: "audī", sPerf: "audīv", pPerf: "audīt", type: "i" },
+                cons: { name: "regere", sPres: "reg", sPerf: "rēx", pPerf: "rēct", type: "cons" },
+                mixed: { name: "capere", sPres: "cap", sPerf: "cēp", pPerf: "capt", type: "mixed" }
+            };
+
+            function normalize(str) {
+                return str.toLowerCase()
+                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
+                    .replace(/ā/g, "a").replace(/ē/g, "e").replace(/ī/g, "i").replace(/ō/g, "o").replace(/ū/g, "u")
+                    .trim();
+            }
+
+            function getVerbForms(verb, tense, voice = "Aktiv") {
+                if (!verb) return Array(6).fill("-");
+                const { sPres, sPerf, pPerf, type } = verb;
+                
+                if (tense === "Präsens") {
+                    if (voice === "Aktiv") {
+                        const ends = (type === "cons") ? ["ō", "is", "it", "imus", "itis", "unt"] : 
+                                     (type === "mixed") ? ["iō", "is", "it", "imus", "itis", "iunt"] :
+                                     (type === "i") ? ["iō", "īs", "it", "īmus", "ītis", "iunt"] : ["ō", "s", "t", "mus", "tis", "nt"];
+                        return ends.map((e, i) => (i === 0 && (type === "a" || type === "e")) ? sPres.slice(0,-1) + e : sPres + e);
+                    } else {
+                        const ends = (type === "cons") ? ["or", "eris", "itur", "imur", "iminī", "untur"] :
+                                     (type === "mixed") ? ["ior", "eris", "itur", "imur", "iminī", "iuntur"] :
+                                     (type === "i") ? ["ior", "īris", "ītur", "īmur", "īminī", "iuntur"] : ["or", "ris", "tur", "mur", "minī", "ntur"];
+                        return ends.map((e, i) => (i === 0 && (type === "a" || type === "e")) ? sPres.slice(0,-1) + e : sPres + e);
+                    }
+                }
+
+                if (tense === "Futur I") {
+                    if (voice === "Aktiv") {
+                        if (type === "a" || type === "e") return ["bō", "bis", "bit", "bimus", "bitis", "bunt"].map(e => sPres + e);
+                        return ["am", "ēs", "et", "ēmus", "ētis", "ent"].map(e => sPres + e);
+                    } else {
+                        if (type === "a" || type === "e") return ["bor", "beris", "bitur", "bimur", "biminī", "buntur"].map(e => sPres + e);
+                        return ["ar", "ēris", "ētur", "ēmur", "ēminī", "entur"].map(e => sPres + e);
+                    }
+                }
+
+                if (tense === "Perfekt") {
+                    if (voice === "Aktiv") return ["ī", "istī", "it", "imus", "istis", "ērunt"].map(e => sPerf + e);
+                    return ["us sum", "us es", "us est", "i sumus", "i estis", "i sunt"].map(e => pPerf + " " + e);
+                }
+
+                if (tense === "Plusquamperfekt") {
+                    if (voice === "Aktiv") return ["eram", "erās", "erat", "erāmus", "erātis", "erant"].map(e => sPerf + e);
+                    return ["us eram", "us erās", "us erat", "i erāmus", "i erātis", "i erant"].map(e => pPerf + " " + e);
+                }
+
+                if (tense === "Futur II") {
+                    if (voice === "Aktiv") return ["erō", "eris", "erit", "erimus", "eritis", "erint"].map(e => sPerf + e);
+                    return ["us erō", "us eris", "us erit", "i erimus", "i eritis", "i erunt"].map(e => pPerf + " " + e);
+                }
+
+                return Array(6).fill("-");
+            }
+
+            const levels = [
+                { id: 1, name: "A-Konj.", desc: "Präsens Aktiv", types: ["a"], tense: "Präsens", voice: "Aktiv" },
+                { id: 2, name: "E-Konj.", desc: "Präsens Aktiv", types: ["e"], tense: "Präsens", voice: "Aktiv" },
+                { id: 3, name: "I-Konj.", desc: "Präsens Aktiv", types: ["i"], tense: "Präsens", voice: "Aktiv" },
+                { id: 4, name: "Kons. Konj.", desc: "Präsens Aktiv", types: ["cons"], tense: "Präsens", voice: "Aktiv" },
+                { id: 5, name: "Gem. Konj.", desc: "Präsens Aktiv", types: ["mixed"], tense: "Präsens", voice: "Aktiv" },
+                { id: 6, name: "Präsens Mix", desc: "Aktiv Mix", types: ["a","e","i","cons","mixed"], tense: "Präsens", voice: "Aktiv" },
+                { id: 7, name: "Passiv Start", desc: "A/E Passiv", types: ["a","e"], tense: "Präsens", voice: "Passiv" },
+                { id: 8, name: "Passiv Mix", desc: "Präsens Passiv", types: ["a","e","i","cons","mixed"], tense: "Präsens", voice: "Passiv" },
+                { id: 9, name: "Futur I", desc: "Aktiv All", types: ["a","e","i","cons","mixed"], tense: "Futur I", voice: "Aktiv" },
+                { id: 10, name: "Perfekt I", desc: "A-Stamm Aktiv", types: ["a"], tense: "Perfekt", voice: "Aktiv" },
+                { id: 11, name: "Perfekt II", desc: "E-Stamm Aktiv", types: ["e"], tense: "Perfekt", voice: "Aktiv" },
+                { id: 12, name: "Perfekt Mix", desc: "Alle Stämme", types: ["a","e","i","cons","mixed"], tense: "Perfekt", voice: "Aktiv" },
+                { id: 13, name: "Plusquamperf.", desc: "Aktiv Mix", types: ["a","e","i","cons","mixed"], tense: "Plusquamperfekt", voice: "Aktiv" },
+                { id: 14, name: "Futur II", desc: "Aktiv Mix", types: ["a","e","i","cons","mixed"], tense: "Futur II", voice: "Aktiv" },
+                { id: 15, name: "Passiv Perfekt", desc: "Bildung mit Partizip", types: ["a","e"], tense: "Perfekt", voice: "Passiv" },
+                { id: 16, name: "Passiv Meister", desc: "Perfektstamm Passiv", types: ["a","e","i","cons","mixed"], tense: "Perfekt", voice: "Passiv" },
+                { id: 17, name: "Mix-Master 1", desc: "Präsens & Perfekt", types: ["a","e","i","cons","mixed"], tense: "Präsens", voice: "Aktiv" },
+                { id: 18, name: "Mix-Master 2", desc: "Alle Zeiten Aktiv", types: ["a","e","i","cons","mixed"], tense: "Futur I", voice: "Aktiv" },
+                { id: 19, name: "Passiv Elite", desc: "Alle Zeiten Passiv", types: ["a","e","i","cons","mixed"], tense: "Präsens", voice: "Passiv" },
+                { id: 20, name: "Ultima", desc: "Alles kombiniert", types: ["a","e","i","cons","mixed"], tense: "Futur II", voice: "Aktiv" }
+            ];
+
+            const initAuth = async () => {
+                await signInAnonymously(auth);
+            };
+            initAuth();
+
+            onAuthStateChanged(auth, (u) => {
+                user = u;
+                if (user) {
+                    const userDoc = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'data');
+                    onSnapshot(userDoc, (snap) => {
+                        if (snap.exists()) {
+                            userData = snap.data();
+                            updateXPUI();
+                            renderLevelGrid();
+                        } else {
+                            setDoc(userDoc, userData);
+                        }
+                    }, (err) => console.error("Snapshot error:", err));
+                }
+            });
+
+            window.showSection = (id) => {
+                document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden-section'));
+                const target = document.getElementById(`section-${id}`);
+                if (target) target.classList.remove('hidden-section');
+                
+                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                if(id === 'start') {
+                    document.getElementById('nav-home').classList.add('active');
+                    renderLevelGrid();
+                }
+                if(id === 'library') {
+                    document.getElementById('nav-library').classList.add('active');
+                    renderLibrary();
+                }
+            };
+
+            function renderLevelGrid() {
+                const grid = document.getElementById('level-grid');
+                if (!grid) return;
+                grid.innerHTML = levels.map(l => {
+                    const isLocked = l.id > userData.unlockedLevel;
+                    return `
+                        <button 
+                            onclick="${isLocked ? '' : `window.selectLevel(${l.id})`}" 
+                            class="level-btn btn-bounce ${isLocked ? 'level-locked bg-slate-200 dark:bg-slate-800' : 'bg-white dark:bg-darkCard shadow-md border-b-4 border-slate-200 dark:border-slate-900'} p-2"
+                        >
+                            <span class="text-xs font-black text-indigo-500">${l.id}</span>
+                            <div class="text-[9px] font-bold text-center leading-tight mt-1 text-slate-400 truncate w-full">${l.name}</div>
+                            ${isLocked ? '<span class="text-xs mt-1">🔒</span>' : ''}
+                        </button>
+                    `;
+                }).join('');
+            }
+
+            window.selectLevel = (id) => {
+                currentLevel = levels.find(l => l.id === id);
+                if (currentLevel) {
+                    document.getElementById('selected-level-name').innerText = `Level ${currentLevel.id}: ${currentLevel.name}`;
+                    document.getElementById('selected-level-desc').innerText = currentLevel.desc;
+                    window.showSection('mode-select');
+                }
+            };
+
+            window.confirmMode = (mode) => {
+                if (!currentLevel) return;
+                session.mode = mode;
+                session.current = 0;
+                window.showSection('play');
+                nextQuestion();
+            };
+
+            function nextQuestion() {
+                if (!currentLevel) { window.showSection('start'); return; }
+                if (session.current >= session.total) { finishSession(); return; }
+                session.current++;
+                updatePlayUI();
+
+                const type = currentLevel.types[Math.floor(Math.random() * currentLevel.types.length)];
+                const verb = verbData[type];
+                const forms = getVerbForms(verb, currentLevel.tense, currentLevel.voice);
+                const labels = ["1. Sg.", "2. Sg.", "3. Sg.", "1. Pl.", "2. Pl.", "3. Pl."];
+                const gapIdx = Math.floor(Math.random() * 6);
+                currentTargetForm = forms[gapIdx];
+
+                document.getElementById('play-word-name').innerText = verb.name;
+                document.getElementById('play-gram-info').innerText = `${currentLevel.tense} (${currentLevel.voice})`;
+                document.getElementById('play-mode-label').innerText = session.mode === 'mc' ? 'Multiple Choice' : 'Schreiben';
+
+                const container = document.getElementById('paradigm-container');
+                container.innerHTML = forms.map((f, i) => `
+                    <div class="paradigm-grid">
+                        <div class="paradigm-label">${labels[i]}</div>
+                        <div class="paradigm-value ${i === gapIdx ? 'gap-highlight' : ''}">${i === gapIdx ? '???' : f}</div>
+                    </div>
+                `).join('');
+
+                const mcArea = document.getElementById('play-options');
+                const textArea = document.getElementById('play-text-input');
+
+                if (session.mode === 'mc') {
+                    mcArea.classList.remove('hidden');
+                    textArea.classList.add('hidden');
+                    let opts = new Set([currentTargetForm]);
+                    while (opts.size < 4) {
+                        const rType = currentLevel.types[Math.floor(Math.random() * currentLevel.types.length)];
+                        const rForms = getVerbForms(verbData[rType], currentLevel.tense, currentLevel.voice);
+                        opts.add(rForms[Math.floor(Math.random() * 6)]);
+                    }
+                    mcArea.innerHTML = Array.from(opts).sort(() => Math.random() - 0.5).map(o => `
+                        <button onclick="window.checkMC('${o}', this)" class="btn-bounce bg-white dark:bg-darkCard p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 font-bold text-sm shadow-sm">${o}</button>
+                    `).join('');
+                } else {
+                    mcArea.classList.add('hidden');
+                    textArea.classList.remove('hidden');
+                    const inp = document.getElementById('verb-input-field');
+                    inp.value = ""; inp.focus();
+                    inp.onkeydown = (e) => { if(e.key === 'Enter') window.checkTextInput(); };
+                }
+            }
+
+            window.checkMC = (val, btn) => {
+                const feedback = document.getElementById('play-feedback');
+                if (val === currentTargetForm) {
+                    btn.classList.add('correct');
+                    userData.xp += 15;
+                    updateXPUI();
+                    setTimeout(nextQuestion, 500);
+                } else {
+                    btn.classList.add('wrong');
+                    feedback.innerHTML = `<span class="text-red-500">Korrekt: ${currentTargetForm}</span>`;
+                    setTimeout(nextQuestion, 1200);
+                }
+            };
+
+            window.checkTextInput = () => {
+                const rawVal = document.getElementById('verb-input-field').value;
+                const val = normalize(rawVal);
+                const target = normalize(currentTargetForm);
+                const feedback = document.getElementById('play-feedback');
+                
+                if (val === target) {
+                    feedback.innerHTML = `<span class="text-emerald-500">Korrekt! ✨</span>`;
+                    userData.xp += 25;
+                    updateXPUI();
+                    setTimeout(nextQuestion, 800);
+                } else {
+                    feedback.innerHTML = `<span class="text-red-500">Richtig: ${currentTargetForm}</span>`;
+                    setTimeout(nextQuestion, 2000);
+                }
+            };
+
+            async function finishSession() {
+                if (currentLevel && currentLevel.id === userData.unlockedLevel) {
+                    userData.unlockedLevel++;
+                }
+                if (user) {
+                    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'data'), userData);
+                }
+                window.showSection('start');
+            }
+
+            function updatePlayUI() {
+                document.getElementById('play-feedback').innerText = "";
+                document.getElementById('play-progress-text').innerText = `${session.current} / ${session.total}`;
+                document.getElementById('play-progress-bar').style.width = `${(session.current/session.total)*100}%`;
+            }
+
+            function updateXPUI() {
+                document.getElementById('xp-display').innerText = `${userData.xp} XP`;
+                document.getElementById('display-level').innerText = Math.floor(userData.xp / 1000) + 1;
+                const progress = document.getElementById('xp-progress');
+                if (progress) progress.style.width = `${((userData.xp % 1000) / 1000) * 100}%`;
+            }
+
+            window.toggleHideMode = () => {
+                isHideMode = !isHideMode;
+                const btn = document.getElementById('hide-mode-btn');
+                btn.innerText = isHideMode ? "🔓 AUFDECKEN" : "👀 ABDECKEN";
+                btn.classList.toggle('bg-indigo-600', isHideMode);
+                btn.classList.toggle('text-white', isHideMode);
+                renderLibrary();
+            };
+
+            function renderLibrary() {
+                const container = document.getElementById('library-content');
+                if (!container) return;
+                
+                const times = [
+                    {t: "Präsens", v: "Aktiv"}, {t: "Präsens", v: "Passiv"},
+                    {t: "Futur I", v: "Aktiv"}, {t: "Futur I", v: "Passiv"},
+                    {t: "Perfekt", v: "Aktiv"}, {t: "Perfekt", v: "Passiv"},
+                    {t: "Plusquamperfekt", v: "Aktiv"}, {t: "Plusquamperfekt", v: "Passiv"},
+                    {t: "Futur II", v: "Aktiv"}, {t: "Futur II", v: "Passiv"}
+                ];
+
+                container.innerHTML = Object.entries(verbData).map(([k, v]) => `
+                    <div class="lib-card p-6 bg-white dark:bg-darkCard rounded-3xl border border-slate-100 dark:border-slate-800">
+                        <div class="flex justify-between items-center cursor-pointer" onclick="this.parentElement.classList.toggle('revealed')">
+                            <div>
+                                <p class="font-black text-indigo-600 uppercase text-[10px] tracking-widest">${v.type}-Konj.</p>
+                                <p class="font-black text-xl italic">${v.name}</p>
+                            </div>
+                            <svg class="lib-status-icon w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="3"/></svg>
+                        </div>
+                        <div class="lib-content space-y-8">
+                            ${times.map(config => `
+                                <div>
+                                    <p class="text-[9px] font-black text-slate-400 uppercase mb-2 border-b border-slate-50 dark:border-slate-800 pb-1">${config.t} ${config.v}</p>
+                                    <table class="lib-table">
+                                        ${getVerbForms(v, config.t, config.v).map((f, i) => `
+                                            <tr>
+                                                <td class="w-1/4 text-slate-400 font-bold text-[9px] uppercase">${["1.Sg","2.Sg","3.Sg","1.Pl","2.Pl","3.Pl"][i]}</td>
+                                                <td class="form-cell ${isHideMode ? 'hidden-cell' : ''}" onclick="this.classList.toggle('revealed-cell')">${f}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </table>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            window.onload = () => window.showSection('start');
+
+        } catch (error) {
+            console.error("Firebase initialization error:", error);
+            alert("⚠️ Fehler: Firebase ist nicht konfiguriert. Bitte trage deine Firebase-Konfiguration in index.html ein!");
+        }
+    </script>
+</body>
+</html>
