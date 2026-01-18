@@ -206,11 +206,11 @@
             let currentTargetForm = "";
 
             const verbData = {
-                a: { name: "vocāre", sPres: "vocā", sPerf: "vocāv", pPerf: "vocāt", type: "a" },
-                e: { name: "monēre", sPres: "monē", sPerf: "monu", pPerf: "monit", type: "e" },
-                i: { name: "audīre", sPres: "audī", sPerf: "audīv", pPerf: "audīt", type: "i" },
-                cons: { name: "regere", sPres: "reg", sPerf: "rēx", pPerf: "rēct", type: "cons" },
-                mixed: { name: "capere", sPres: "cap", sPerf: "cēp", pPerf: "capt", type: "mixed" }
+                a: { name: "vocāre", sPres: "vocā", sPerf: "vocāv", pPerf: "vocāt", pPerfNom: "vocātus", type: "a" },
+                e: { name: "monēre", sPres: "monē", sPerf: "monu", pPerf: "monit", pPerfNom: "monitus", type: "e" },
+                i: { name: "audīre", sPres: "audi", sPerf: "audīv", pPerf: "audīt", pPerfNom: "audītus", type: "i" },
+                cons: { name: "regere", sPres: "reg", sPerf: "rēx", pPerf: "rēct", pPerfNom: "rēctus", type: "cons" },
+                mixed: { name: "capere", sPres: "cap", sPerf: "cēp", pPerf: "capt", pPerfNom: "captus", type: "mixed" }
             };
 
             function normalize(str) {
@@ -228,39 +228,62 @@
                     if (voice === "Aktiv") {
                         const ends = (type === "cons") ? ["ō", "is", "it", "imus", "itis", "unt"] : 
                                      (type === "mixed") ? ["iō", "is", "it", "imus", "itis", "iunt"] :
-                                     (type === "i") ? ["iō", "īs", "it", "īmus", "ītis", "iunt"] : ["ō", "s", "t", "mus", "tis", "nt"];
+                                     (type === "i") ? ["ō", "s", "t", "mus", "tis", "unt"] : ["ō", "s", "t", "mus", "tis", "nt"];
                         return ends.map((e, i) => (i === 0 && (type === "a" || type === "e")) ? sPres.slice(0,-1) + e : sPres + e);
                     } else {
-                        const ends = (type === "cons") ? ["or", "eris", "itur", "imur", "iminī", "untur"] :
-                                     (type === "mixed") ? ["ior", "eris", "itur", "imur", "iminī", "iuntur"] :
-                                     (type === "i") ? ["ior", "īris", "ītur", "īmur", "īminī", "iuntur"] : ["or", "ris", "tur", "mur", "minī", "ntur"];
+                        const ends = (type === "a") ? ["or", "āris", "ātur", "āmur", "āminī", "antur"] :
+                                     (type === "e") ? ["eor", "eris", "etur", "emur", "eminī", "entur"] :
+                                     (type === "i") ? ["ior", "īris", "ītur", "īmur", "īminī", "iuntur"] :
+                                     (type === "cons") ? ["or", "eris", "itur", "imur", "iminī", "untur"] :
+                                     ["ior", "eris", "itur", "imur", "iminī", "iuntur"];
                         return ends.map((e, i) => (i === 0 && (type === "a" || type === "e")) ? sPres.slice(0,-1) + e : sPres + e);
+                    }
+                }
+
+                if (tense === "Imperfekt") {
+                    if (voice === "Aktiv") {
+                        if (type === "a" || type === "e") return ["bam", "bās", "bat", "bāmus", "bātis", "bant"].map(e => sPres + e);
+                        if (type === "i") return ["ēbam", "ēbās", "ēbat", "ēbāmus", "ēbātis", "ēbant"].map(e => sPres + e);
+                        if (type === "cons") return ["ēbam", "ēbās", "ēbat", "ēbāmus", "ēbātis", "ēbant"].map(e => sPres + e);
+                        if (type === "mixed") return ["iēbam", "iēbās", "iēbat", "iēbāmus", "iēbātis", "iēbant"].map(e => sPres + e);
+                    } else {
+                        if (type === "a" || type === "e") return ["bar", "bāris", "bātur", "bāmur", "bāminī", "bantur"].map(e => sPres + e);
+                        if (type === "i") return ["ēbar", "ēbāris", "ēbātur", "ēbāmur", "ēbāminī", "ēbantur"].map(e => sPres + e);
+                        if (type === "cons") return ["ēbar", "ēbāris", "ēbātur", "ēbāmur", "ēbāminī", "ēbantur"].map(e => sPres + e);
+                        if (type === "mixed") return ["iēbar", "iēbāris", "iēbātur", "iēbāmur", "iēbāminī", "iēbantur"].map(e => sPres + e);
                     }
                 }
 
                 if (tense === "Futur I") {
                     if (voice === "Aktiv") {
                         if (type === "a" || type === "e") return ["bō", "bis", "bit", "bimus", "bitis", "bunt"].map(e => sPres + e);
-                        return ["am", "ēs", "et", "ēmus", "ētis", "ent"].map(e => sPres + e);
+                        if (type === "mixed") return ["iam", "ies", "iet", "iēmus", "iētis", "ient"].map(e => sPres + e);
+                        if (type === "i") return ["am", "es", "et", "ēmus", "ētis", "ent"].map(e => sPres + e);
+                        if (type === "cons") return ["am", "ēs", "et", "ēmus", "ētis", "ent"].map(e => sPres + e);
                     } else {
                         if (type === "a" || type === "e") return ["bor", "beris", "bitur", "bimur", "biminī", "buntur"].map(e => sPres + e);
-                        return ["ar", "ēris", "ētur", "ēmur", "ēminī", "entur"].map(e => sPres + e);
+                        if (type === "i") return ["ar", "ieris", "ietur", "iēmur", "iēminī", "ientur"].map(e => sPres + e);
+                        if (type === "cons") return ["ar", "eris", "etur", "ēmur", "ēminī", "entur"].map(e => sPres + e);
+                        if (type === "mixed") return ["ar", "ieris", "ietur", "iēmur", "iēminī", "ientur"].map(e => sPres + e);
                     }
                 }
 
                 if (tense === "Perfekt") {
                     if (voice === "Aktiv") return ["ī", "istī", "it", "imus", "istis", "ērunt"].map(e => sPerf + e);
-                    return ["us sum", "us es", "us est", "i sumus", "i estis", "i sunt"].map(e => pPerf + " " + e);
+                    const { pPerfNom } = verb;
+                    return [" sum", " es", " est", "ī sumus", "ae estis", "ī sunt"].map(e => pPerfNom + e);
                 }
 
                 if (tense === "Plusquamperfekt") {
                     if (voice === "Aktiv") return ["eram", "erās", "erat", "erāmus", "erātis", "erant"].map(e => sPerf + e);
-                    return ["us eram", "us erās", "us erat", "i erāmus", "i erātis", "i erant"].map(e => pPerf + " " + e);
+                    const { pPerfNom } = verb;
+                    return [" eram", " erās", " erat", "ī erāmus", "ae erātis", "ī erant"].map(e => pPerfNom + e);
                 }
 
                 if (tense === "Futur II") {
                     if (voice === "Aktiv") return ["erō", "eris", "erit", "erimus", "eritis", "erint"].map(e => sPerf + e);
-                    return ["us erō", "us eris", "us erit", "i erimus", "i eritis", "i erunt"].map(e => pPerf + " " + e);
+                    const { pPerfNom } = verb;
+                    return [" erō", " eris", " erit", "ī erimus", "ae eritis", "ī erunt"].map(e => pPerfNom + e);
                 }
 
                 return Array(6).fill("-");
